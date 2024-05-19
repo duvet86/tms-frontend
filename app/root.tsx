@@ -1,3 +1,5 @@
+import type { LinksFunction, MetaFunction } from "@remix-run/node";
+
 import {
   Links,
   Meta,
@@ -5,6 +7,16 @@ import {
   Scripts,
   ScrollRestoration,
 } from "@remix-run/react";
+
+import stylesheet from "~/tailwind.css?url";
+
+export const links: LinksFunction = () => [
+  { rel: "stylesheet", href: stylesheet },
+];
+
+export const meta: MetaFunction = () => {
+  return [{ title: "TMS" }, { name: "description", content: "TMS Sadleirs" }];
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
