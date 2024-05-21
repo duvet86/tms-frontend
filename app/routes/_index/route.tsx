@@ -1,17 +1,37 @@
+import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
+
+import { Form, json, useLoaderData } from "@remix-run/react";
+
+import { authenticator } from "~/.server/auth";
+
+export async function loader({ request }: LoaderFunctionArgs) {
+  const isAuthenticated = await authenticator.isAuthenticated(request);
+
+  console.log("______________isAuthenticated", isAuthenticated);
+
+  return json({
+    isAuthenticated,
+  });
+}
+
+export async function action({ request }: ActionFunctionArgs) {
+  const user = await authenticator.authenticate("microsoft", request);
+
+  console.log("______________user", user);
+}
+
 export default function Index() {
+  const { isAuthenticated } = useLoaderData<typeof loader>();
+
   return (
-    <article className="prose">
-      <h1>Garlic bread with cheese: What the science tells us</h1>
-      <p>
-        For years parents have espoused the health benefits of eating garlic
-        bread with cheese to their children, with the food earning such an
-        iconic status in our culture that kids will often dress up as warm,
-        cheesy loaf for Halloween.
-      </p>
-      <p>
-        But a recent study shows that the celebrated appetizer may be linked to
-        a series of rabies cases springing up around the country.
-      </p>
-    </article>
+    <>
+      {isAuthenticated ? (
+        <div>Authenticated</div>
+      ) : (
+        <Form method="post">
+          <button className="btn">Login with Microsoft</button>
+        </Form>
+      )}
+    </>
   );
 }

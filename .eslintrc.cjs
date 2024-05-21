@@ -71,11 +71,14 @@ module.exports = {
         "plugin:import/recommended",
         "plugin:import/typescript",
       ],
+      rules: {
+        "@typescript-eslint/consistent-type-imports": "error",
+      },
     },
 
     // Node
     {
-      files: [".eslintrc.cjs"],
+      files: [".eslintrc.cjs", "server.mjs"],
       env: {
         node: true,
       },
