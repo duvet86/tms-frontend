@@ -16,19 +16,10 @@ interface MicrosoftExtraParams extends Record<string, string | number> {
 
 interface MicrosoftProfile extends OAuth2Profile {
   id: string;
+  userPrincipalName: string;
   displayName: string;
-  name: {
-    familyName: string;
-    givenName: string;
-  };
-  emails: [{ value: string }];
-  _json: {
-    sub: string;
-    name: string;
-    family_name: string;
-    given_name: string;
-    email: string;
-  };
+  givenName: string | null;
+  surname: string | null;
 }
 
 interface User {
@@ -36,12 +27,37 @@ interface User {
   profile: MicrosoftProfile;
 }
 
+const TENANT_ID = process.env.TENANT_ID;
+
 export const authenticator = new Authenticator<User>(sessionStorage);
 
 authenticator.use(
   new OAuth2Strategy<User, MicrosoftProfile, MicrosoftExtraParams>(
+    {
+      clientId: process.env.CLIENT_ID!,
+      clientSecret: process.env.CLIENT_SECRET!,
+
+      authorizationEndpoint: `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize`,
+      tokenEndpoint: `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`,
+      redirectURI: "http://localhost:5173/auth-callback",
+
+      tokenRevocationEndpoint: `https://login.microsoftonline.com/${TENANT_ID}/oauth2/logout`,
+
+      codeChallengeMethod: "S256", // optional
+      scopes: ["openid", "email", "profile"], // optional
+
+      authenticateWith: "request_body", // optional
+    },
     async ({ tokens, profile }) => {
-      return { profile, tokens };
+      const resp = await fetch("https://graph.microsoft.com/v1.0/me", {
+        headers: {
+          Authorization: `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      const user = await resp.json();
+
+      return { tokens, profile: { ...profile, ...user } };
     }
   ),
   // this is optional, but if you setup more than one OAuth2 instance you will
