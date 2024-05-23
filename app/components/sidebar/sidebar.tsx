@@ -18,6 +18,14 @@ export function Sidebar() {
       <ul className="menu p-4 w-80 border-r">
         <li className="border-b py-2">
           <Link
+            to="/scheduling"
+            className="flex items-center justify-between text-base font-medium uppercase"
+          >
+            Scheduling <ChevronRightIcon className="w-6 h-6" />
+          </Link>
+        </li>
+        <li className="border-b py-2">
+          <Link
             to="/customers"
             className="flex items-center justify-between text-base font-medium uppercase"
           >
