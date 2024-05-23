@@ -1,11 +1,29 @@
-import { Authenticator } from "remix-auth";
-import {
-  OAuth2Strategy,
-  type OAuth2Profile,
-  type TokenResponseBody,
+import type { StrategyVerifyCallback } from "remix-auth";
+import type {
+  OAuth2StrategyVerifyParams,
+  OAuth2Profile,
+  TokenResponseBody,
+  OAuth2StrategyOptions,
 } from "remix-auth-oauth2";
 
+import { Authenticator } from "remix-auth";
+import { OAuth2Strategy } from "remix-auth-oauth2";
+
 import { sessionStorage } from "./session";
+
+const SCOPES = ["openid", "profile", "email", "offline_access"];
+
+export interface MicrosoftStrategyOptions
+  extends Omit<
+    OAuth2StrategyOptions,
+    | "authorizationEndpoint"
+    | "tokenEndpoint"
+    | "authenticateWith"
+    | "codeChallengeMethod"
+  > {
+  tenantId?: string;
+  prompt?: string;
+}
 
 interface MicrosoftExtraParams extends Record<string, string | number> {
   expires_in: 3599;
@@ -14,7 +32,7 @@ interface MicrosoftExtraParams extends Record<string, string | number> {
   id_token: string;
 }
 
-interface MicrosoftProfile extends OAuth2Profile {
+export interface MicrosoftProfile extends OAuth2Profile {
   id: string;
   userPrincipalName: string;
   displayName: string;
@@ -27,40 +45,78 @@ interface User {
   profile: MicrosoftProfile;
 }
 
-const TENANT_ID = process.env.TENANT_ID;
-
 export const authenticator = new Authenticator<User>(sessionStorage);
 
-authenticator.use(
-  new OAuth2Strategy<User, MicrosoftProfile, MicrosoftExtraParams>(
+export class MicrosoftStrategy<User> extends OAuth2Strategy<
+  User,
+  MicrosoftProfile,
+  MicrosoftExtraParams
+> {
+  private prompt: string;
+
+  name = "microsoft";
+
+  constructor(
     {
-      clientId: process.env.CLIENT_ID!,
-      clientSecret: process.env.CLIENT_SECRET!,
+      clientId,
+      clientSecret,
+      redirectURI,
+      scopes,
+      prompt,
+      tenantId,
+    }: MicrosoftStrategyOptions,
+    verify: StrategyVerifyCallback<
+      User,
+      OAuth2StrategyVerifyParams<MicrosoftProfile, MicrosoftExtraParams>
+    >
+  ) {
+    super(
+      {
+        clientId,
+        clientSecret,
+        redirectURI,
+        authorizationEndpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/authorize`,
+        tokenEndpoint: `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+        authenticateWith: "request_body",
+        codeChallengeMethod: "S256",
+        scopes,
+      },
+      verify
+    );
+    this.prompt = prompt ?? "none";
+  }
 
-      authorizationEndpoint: `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/authorize`,
-      tokenEndpoint: `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`,
-      redirectURI: "http://localhost:5173/auth-callback",
+  protected authorizationParams(params: URLSearchParams): URLSearchParams {
+    params.set("prompt", this.prompt);
 
-      tokenRevocationEndpoint: `https://login.microsoftonline.com/${TENANT_ID}/oauth2/logout`,
+    return params;
+  }
 
-      codeChallengeMethod: "S256", // optional
-      scopes: ["openid", "email", "profile"], // optional
+  protected async userProfile(
+    tokens: TokenResponseBody & MicrosoftExtraParams
+  ): Promise<MicrosoftProfile> {
+    const resp = await fetch("https://graph.microsoft.com/v1.0/me", {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
 
-      authenticateWith: "request_body", // optional
-    },
-    async ({ tokens, profile }) => {
-      const resp = await fetch("https://graph.microsoft.com/v1.0/me", {
-        headers: {
-          Authorization: `Bearer ${tokens.access_token}`,
-        },
-      });
+    const user = await resp.json();
 
-      const user = await resp.json();
+    return user;
+  }
+}
 
-      return { tokens, profile: { ...profile, ...user } };
-    }
-  ),
-  // this is optional, but if you setup more than one OAuth2 instance you will
-  // need to set a custom name to each one
-  "microsoft"
+const microsoftStrategy = new MicrosoftStrategy(
+  {
+    clientId: process.env.CLIENT_ID!,
+    clientSecret: process.env.CLIENT_SECRET!,
+    redirectURI: "http://localhost:5173/auth/microsoft/callback",
+    tenantId: process.env.TENANT_ID,
+    scopes: SCOPES,
+    prompt: "login",
+  },
+  async ({ tokens, profile }) => ({ tokens, profile })
 );
+
+authenticator.use(microsoftStrategy);

@@ -1,7 +1,13 @@
-import { UserCircleIcon } from "@heroicons/react/24/outline";
-import { Link } from "@remix-run/react";
+import type { MicrosoftProfile } from "~/.server/auth";
 
-export function Navbar() {
+import { Link } from "@remix-run/react";
+import { UserCircleIcon } from "@heroicons/react/24/outline";
+
+interface Props {
+  user: MicrosoftProfile;
+}
+
+export function Navbar({ user }: Props) {
   return (
     <div className="navbar bg-base-100 shadow-sm h-16">
       <div className="flex-1"></div>
@@ -14,12 +20,9 @@ export function Navbar() {
           />
         </div>
         <div className="dropdown dropdown-end">
-          <div
-            tabIndex={0}
-            role="button"
-            className="btn btn-ghost btn-circle avatar"
-          >
-            <UserCircleIcon />
+          <div tabIndex={0} role="button" className="btn btn-ghost">
+            {user.displayName}
+            <UserCircleIcon className="w-8 h-8" />
           </div>
           <ul className="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52">
             <li>

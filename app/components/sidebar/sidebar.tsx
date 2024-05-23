@@ -4,7 +4,7 @@ import { Link } from "@remix-run/react";
 export function Sidebar() {
   return (
     <>
-      <div className="h-16">
+      <div className="h-16 shadow-sm">
         <Link to="/" className="btn btn-ghost m-1">
           <img
             src="/images/logo-green.png"
@@ -15,7 +15,7 @@ export function Sidebar() {
           TMS
         </Link>
       </div>
-      <ul className="menu p-4 w-80">
+      <ul className="menu p-4 w-80 border-r">
         <li className="border-b py-2">
           <Link
             to="/customers"
