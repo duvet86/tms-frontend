@@ -91,8 +91,6 @@ export class MicrosoftStrategy<User> extends OAuth2Strategy<
   protected async userProfile(
     tokens: TokenResponseBody & MicrosoftExtraParams
   ): Promise<MicrosoftProfile> {
-    console.log(tokens);
-
     const resp = await fetch(`${process.env.API_BASE_URL}/v1/api/me`, {
       headers: {
         Authorization: `Bearer ${tokens.access_token}`,
@@ -115,10 +113,10 @@ const microsoftStrategy = new MicrosoftStrategy(
     redirectURI: process.env.AUTH_REDIRECT_URL!,
     tenantId: process.env.TENANT_ID,
     scopes: [
-      // "openid",
-      // "profile",
-      // "email",
-      // "offline_access",
+      "openid",
+      "profile",
+      "email",
+      "offline_access",
       `api://${process.env.API_ID}/Read.User`,
     ],
     prompt: "login",

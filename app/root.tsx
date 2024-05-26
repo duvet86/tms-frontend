@@ -6,14 +6,21 @@ import type {
 import type { MicrosoftProfile } from "~/.server/auth";
 
 import {
+  Link,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  isRouteErrorResponse,
   json,
   useLoaderData,
+  useRouteError,
 } from "@remix-run/react";
+import {
+  HomeIcon,
+  ArrowLeftStartOnRectangleIcon,
+} from "@heroicons/react/24/outline";
 
 import stylesheet from "~/tailwind.css?url";
 
@@ -43,14 +50,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="mytheme">
+    <html lang="en" data-theme="mytheme" className="h-full">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
       </head>
-      <body>
+      <body className="h-full">
         {children}
         <ScrollRestoration />
         <Scripts />
@@ -81,6 +88,34 @@ export default function App() {
           <Sidebar />
         </div>
       </div>
+    </div>
+  );
+}
+
+export function ErrorBoundary() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const error: any = useRouteError();
+
+  return (
+    <div className="flex flex-col bg-base-100 h-full p-4 items-center justify-center gap-4">
+      {isRouteErrorResponse(error) ? (
+        <>
+          <h1 className="text-4xl mb-4">{error.statusText}</h1>
+          <div className="flex gap-6">
+            <Link className="btn btn-primary" to="/">
+              <HomeIcon className="w-6 h-6" /> Home
+            </Link>
+            <Link className="btn btn-neutral" to="/logout">
+              <ArrowLeftStartOnRectangleIcon className="w-6 h-6" /> Logout
+            </Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <h1>Error!</h1>
+          <p>{error?.message ?? "Unknown error"}</p>
+        </>
+      )}
     </div>
   );
 }
